@@ -7,10 +7,69 @@
 //
 
 import UIKit
+import Alamofire
+
+protocol VideoModelDelegate {
+    func dataReady()
+    
+}
 
 class VideoModel: NSObject {
     
+    let API_KEY = "PLtV_YWkcJzbw33PqF_brmEYWAIxtT71Rm"
+    let UPLOADS_PLAYLIST_ID = "AIzaSyCH74-OpWIK4e2jn_xENYVnnwpaWvPhwWk"
+    var videoArray = [Video]()
+    
+    var delegate:VideoModelDelegate?
+    
+    func getFeedVideos(){
+        //fetch the videos dynamically through the youtube
+        
+        
+        
+        Alamofire.request(.GET, "https://www.googleapis.com/youtube/v3/playlists", parameters: [ "part": "snippet","playlistId": UPLOADS_PLAYLIST_ID,"key": API_KEY], encoding: ParameterEncoding.URL, headers: nil).responseJSON { (response) in
+            if let JSON = response.result.value {
+                //print("JSON: \(JSON)")
+                
+                var arrayOfVideos = [Video]()
+               
+                if let items = JSON["items"] as? NSArray {
+                    for video in items {
+                        print(video)
+                        
+                        let videoObj = Video()
+                        videoObj.videoId = video.valueForKeyPath("snippet.resourceId.videoId") as! String
+                        videoObj.videoTitle = video.valueForKeyPath("snippet.title") as! String
+                        videoObj.videoDescription = video.valueForKeyPath("snippet.description") as! String
+                        videoObj.videoThumbnailUrl = video.valueForKeyPath("snippet.thumbnails.maxres.url") as! String
+                        
+                        arrayOfVideos.append(videoObj)
+                        
+                    }
+                    
+                    //when all the video objects have been constructed, assign the array to the VideoModel property
+                    
+                    self.videoArray = arrayOfVideos
+                    
+                    //notify the delegate that the data is ready
+                    
+                    if self.delegate != nil {
+                        
+                        self.delegate!.dataReady()
+                    }
+                 }
+               
+            }
+            
+        }
+    }
+    
+    
+    //hardcoded data not really needed now since I am doing it dynamically up above.
+    
     func getVideos() ->[Video] {
+        
+        
         
         // create an empty array of video objects
         var videos = [Video]()
